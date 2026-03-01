@@ -15,6 +15,11 @@ export function getTrustedOrigin(origin: string): string {
     return origin
   }
 
+  // 4. Allow Zeabur deployments
+  if (/^https:\/\/.*\.zeabur\.app$/.test(origin)) {
+    return origin
+  }
+
   // Default: Block
   return ''
 }

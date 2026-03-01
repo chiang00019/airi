@@ -4,14 +4,14 @@ import { env, exit } from 'node:process'
 
 import { useLogger } from '@guiiai/logg'
 import { injeca } from 'injeca'
-import { nonEmpty, object, parse, pipe, string } from 'valibot'
+import { nonEmpty, object, optional, parse, pipe, string } from 'valibot'
 
 const EnvSchema = object({
   DATABASE_URL: pipe(string(), nonEmpty('DATABASE_URL is required')),
   AUTH_GOOGLE_CLIENT_ID: pipe(string(), nonEmpty('AUTH_GOOGLE_CLIENT_ID is required')),
   AUTH_GOOGLE_CLIENT_SECRET: pipe(string(), nonEmpty('AUTH_GOOGLE_CLIENT_SECRET is required')),
-  AUTH_GITHUB_CLIENT_ID: pipe(string(), nonEmpty('AUTH_GITHUB_CLIENT_ID is required')),
-  AUTH_GITHUB_CLIENT_SECRET: pipe(string(), nonEmpty('AUTH_GITHUB_CLIENT_SECRET is required')),
+  AUTH_GITHUB_CLIENT_ID: optional(string()),
+  AUTH_GITHUB_CLIENT_SECRET: optional(string()),
 })
 
 export type Env = InferOutput<typeof EnvSchema>
