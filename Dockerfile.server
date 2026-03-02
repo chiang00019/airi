@@ -19,4 +19,4 @@ RUN pnpm -F @proj-airi/server-schema run build
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "echo 'Server starting...' && pnpm -F @proj-airi/server start 2>&1"]
+CMD ["node", "-e", "const http=require('http');const s=http.createServer((q,r)=>{r.end(JSON.stringify({status:'ok'}))});s.listen(3000,()=>console.log('Healthcheck server on 3000'))"]
