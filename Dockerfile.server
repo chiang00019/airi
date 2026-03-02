@@ -12,8 +12,8 @@ COPY packages/server-schema packages/server-schema
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store \
     pnpm install --frozen-lockfile --ignore-scripts
 
-# Manually install esbuild binary (needed by tsx) since --ignore-scripts skips it
-RUN node node_modules/esbuild/install.js || true
+# Rebuild esbuild to install platform-specific binary (--ignore-scripts skips it)
+RUN pnpm rebuild esbuild
 
 RUN pnpm -F @proj-airi/server-schema run build
 
