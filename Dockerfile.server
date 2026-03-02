@@ -1,8 +1,11 @@
-FROM node:24-alpine
+FROM node:24-alpine AS build
 
 WORKDIR /app
 
 RUN corepack enable
+
+# Enable injected workspace packages for pnpm v10 deploy
+RUN echo "inject-workspace-packages=true" > .npmrc
 
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY patches/ ./patches/
@@ -17,10 +20,23 @@ RUN pnpm rebuild esbuild
 
 RUN pnpm -F @proj-airi/server-schema run build
 
-# Clean up dev-only files to reduce image size
-RUN rm -rf /app/packages/server-schema/src /app/packages/server-schema/node_modules
+# Deploy with pnpm to create a minimal production bundle
+RUN NODE_OPTIONS=--max-old-space-size=1024 pnpm -F @proj-airi/server deploy --prod /deploy
 
-WORKDIR /app/apps/server
+# Verify deploy directory structure
+RUN ls -la /deploy/ && ls -la /deploy/src/ 2>/dev/null || echo "No src at root" && \
+    ls -la /deploy/node_modules/tsx/ 2>/dev/null || echo "No tsx"
+
+# Copy esbuild binary into the deploy directory
+RUN cp -r /app/node_modules/.pnpm/esbuild@*/node_modules/@esbuild /deploy/node_modules/@esbuild 2>/dev/null || true
+RUN cp -r /app/node_modules/.pnpm/@esbuild+linux-x64@*/node_modules/@esbuild /deploy/node_modules/ 2>/dev/null || true
+
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY --from=build /deploy .
+COPY --from=build /app/packages/server-schema/dist ./node_modules/@proj-airi/server-schema/dist
 
 ENV NODE_OPTIONS=--max-old-space-size=256
 
