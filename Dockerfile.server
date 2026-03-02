@@ -1,4 +1,4 @@
-FROM node:24-alpine
+FROM node:24-alpine AS build
 
 WORKDIR /app
 
@@ -12,11 +12,25 @@ COPY packages/server-schema packages/server-schema
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store \
     pnpm install --frozen-lockfile --ignore-scripts
 
-# Rebuild esbuild to install platform-specific binary (--ignore-scripts skips it)
+# Rebuild esbuild to install platform-specific binary
 RUN pnpm rebuild esbuild
 
 RUN pnpm -F @proj-airi/server-schema run build
 
+# Deploy with pnpm to create a minimal production bundle
+RUN pnpm -F @proj-airi/server deploy --prod /deploy
+
+# Copy esbuild binary into the deploy directory
+RUN cp -r /app/node_modules/.pnpm/esbuild@*/node_modules/@esbuild /deploy/node_modules/@esbuild 2>/dev/null || true
+RUN cp -r /app/node_modules/.pnpm/@esbuild+linux-x64@*/node_modules/@esbuild /deploy/node_modules/ 2>/dev/null || true
+
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY --from=build /deploy .
+COPY --from=build /app/packages/server-schema/dist ./node_modules/@proj-airi/server-schema/dist
+
 EXPOSE 3000
 
-CMD ["node", "-e", "const http=require('http');const s=http.createServer((q,r)=>{r.end(JSON.stringify({status:'ok'}))});s.listen(3000,()=>console.log('Healthcheck server on 3000'))"]
+CMD ["node", "--import", "tsx", "src/app.ts"]
