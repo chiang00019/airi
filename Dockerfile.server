@@ -10,10 +10,10 @@ COPY apps/server apps/server
 COPY packages/server-schema packages/server-schema
 
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile --ignore-scripts
+    pnpm install --frozen-lockfile
 
 RUN pnpm -F @proj-airi/server-schema run build
 
 EXPOSE 3000
 
-CMD ["pnpm", "-F", "@proj-airi/server", "start"]
+CMD ["sh", "-c", "echo 'ENV CHECK:' && env | sort && echo 'Starting server...' && pnpm -F @proj-airi/server start"]
