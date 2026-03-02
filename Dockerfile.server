@@ -18,7 +18,7 @@ RUN pnpm rebuild esbuild
 RUN pnpm -F @proj-airi/server-schema run build
 
 # Deploy with pnpm to create a minimal production bundle
-RUN pnpm -F @proj-airi/server deploy --prod /deploy
+RUN pnpm -F @proj-airi/server deploy --prod --legacy /deploy
 
 # Copy esbuild binary into the deploy directory
 RUN cp -r /app/node_modules/.pnpm/esbuild@*/node_modules/@esbuild /deploy/node_modules/@esbuild 2>/dev/null || true
