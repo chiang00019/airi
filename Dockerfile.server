@@ -18,18 +18,12 @@ RUN pnpm rebuild esbuild
 RUN pnpm -F @proj-airi/server-schema run build
 
 # Deploy with pnpm to create a minimal production bundle
-RUN pnpm -F @proj-airi/server deploy --prod --legacy /deploy
+# Use higher memory limit for pnpm resolution
+RUN NODE_OPTIONS=--max-old-space-size=1024 pnpm -F @proj-airi/server deploy --prod --legacy /deploy
 
 # Copy esbuild binary into the deploy directory
 RUN cp -r /app/node_modules/.pnpm/esbuild@*/node_modules/@esbuild /deploy/node_modules/@esbuild 2>/dev/null || true
 RUN cp -r /app/node_modules/.pnpm/@esbuild+linux-x64@*/node_modules/@esbuild /deploy/node_modules/ 2>/dev/null || true
-
-# Debug: verify deploy directory structure
-RUN echo "=== Deploy directory ===" && ls -la /deploy/ && \
-    echo "=== Deploy src ===" && ls -la /deploy/src/ && \
-    echo "=== esbuild check ===" && ls -la /deploy/node_modules/esbuild/ 2>/dev/null || echo "no esbuild dir" && \
-    echo "=== @esbuild check ===" && ls -la /deploy/node_modules/@esbuild/ 2>/dev/null || echo "no @esbuild dir" && \
-    echo "=== tsx check ===" && ls -la /deploy/node_modules/tsx/ 2>/dev/null || echo "no tsx dir"
 
 FROM node:24-alpine
 
@@ -38,7 +32,8 @@ WORKDIR /app
 COPY --from=build /deploy .
 COPY --from=build /app/packages/server-schema/dist ./node_modules/@proj-airi/server-schema/dist
 
+ENV NODE_OPTIONS=--max-old-space-size=256
+
 EXPOSE 3000
 
-# Use shell form to capture startup errors
-CMD node -e "console.log('=== NODE START ==='); console.log('Node:', process.version); console.log('CWD:', process.cwd()); console.log('Files:', require('fs').readdirSync('.')); console.log('src:', require('fs').readdirSync('./src'));" && node --import tsx src/app.ts
+CMD ["node", "--import", "tsx", "src/app.ts"]
