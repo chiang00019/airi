@@ -10,10 +10,13 @@ COPY apps/server apps/server
 COPY packages/server-schema packages/server-schema
 
 RUN --mount=type=cache,id=pnpm-store,target=/root/.pnpm-store \
-    pnpm install --frozen-lockfile
+    pnpm install --frozen-lockfile --ignore-scripts
+
+# Manually install esbuild binary (needed by tsx) since --ignore-scripts skips it
+RUN node node_modules/esbuild/install.js || true
 
 RUN pnpm -F @proj-airi/server-schema run build
 
 EXPOSE 3000
 
-CMD ["sh", "-c", "echo 'ENV CHECK:' && env | sort && echo 'Starting server...' && pnpm -F @proj-airi/server start"]
+CMD ["sh", "-c", "echo 'Server starting...' && pnpm -F @proj-airi/server start 2>&1"]
