@@ -20,11 +20,12 @@ RUN pnpm -F @proj-airi/server-schema run build
 # Enable inject-workspace-packages for pnpm v10 deploy (added after install to avoid changing install behavior)
 RUN echo "inject-workspace-packages=true" >> .npmrc
 
-# Deploy with pnpm to create a minimal production bundle
-RUN NODE_OPTIONS=--max-old-space-size=1024 pnpm -F @proj-airi/server deploy --prod /deploy
+# Deploy with pnpm to create a minimal production bundle (ignore-scripts to avoid native module builds)
+RUN NODE_OPTIONS=--max-old-space-size=1024 pnpm -F @proj-airi/server deploy --prod --ignore-scripts /deploy
 
 # Copy esbuild binary into the deploy directory (needed for tsx at runtime)
 RUN cp -r /app/node_modules/.pnpm/esbuild@*/node_modules/@esbuild /deploy/node_modules/@esbuild 2>/dev/null || true
+RUN cp /app/node_modules/.pnpm/esbuild@*/node_modules/esbuild/bin/esbuild /deploy/node_modules/esbuild/bin/esbuild 2>/dev/null || true
 
 # Debug: show deploy directory size and structure
 RUN du -sh /deploy/ && ls -la /deploy/ && ls /deploy/src/ 2>/dev/null || echo "No src dir"
